@@ -2,10 +2,10 @@ import path from 'path';
 import chalk from 'chalk';
 import del from 'del';
 import compile from '../utils/compile';
-import type { Input, ModuleTargetOptions } from '../types';
+import type { Input, CJSTargetOptions } from '../types';
 
 type Options = Input & {
-  options?: ModuleTargetOptions;
+  options?: CJSTargetOptions;
 };
 
 export default async function build({
@@ -14,6 +14,7 @@ export default async function build({
   output,
   options,
   report,
+  watch,
 }: Options) {
   report.info(
     `Cleaning up previous build at ${chalk.blue(path.relative(root, output))}`
@@ -29,6 +30,7 @@ export default async function build({
     babelrc: options?.babelrc,
     configFile: options?.configFile,
     copyFlow: options?.copyFlow,
+    watch,
     report,
   });
 }
