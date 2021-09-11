@@ -38,6 +38,8 @@ export type AARTargetOptions = {
 export type TargetOptions = ModuleTargetOptions | TSTargetOptions;
 
 export type Options = {
+  concurrent?: boolean;
+  failFast?: boolean;
   source?: string;
   output?: string;
   targets?: (Target | [Target, TargetOptions])[];

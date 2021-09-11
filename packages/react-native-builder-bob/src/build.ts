@@ -75,6 +75,8 @@ export const build = async ({ argv, root, watch }: In) => {
     success: logger.success,
   };
 
+  let builds = [];
+
   for (const target of options.targets!) {
     const targetName = Array.isArray(target) ? target[0] : target;
     const targetOptions = Array.isArray(target) ? target[1] : {};
@@ -83,46 +85,69 @@ export const build = async ({ argv, root, watch }: In) => {
 
     switch (targetName) {
       case 'aar':
-        await buildAAR({
-          root,
-          source: path.resolve(root, source as string),
-          output: path.resolve(root, output as string, 'aar'),
-          options: targetOptions as Partial<AARTargetOptions>,
-          report,
-        });
+        builds.push(() =>
+          buildAAR({
+            root,
+            source: path.resolve(root, source as string),
+            output: path.resolve(root, output as string, 'aar'),
+            options: targetOptions as Partial<AARTargetOptions>,
+            report,
+          })
+        );
         break;
       case 'commonjs':
-        await buildCommonJS({
-          root,
-          source: path.resolve(root, source as string),
-          output: path.resolve(root, output as string, 'commonjs'),
-          options: targetOptions as CJSTargetOptions,
-          report,
-          watch,
-        });
+        builds.push(() =>
+          buildCommonJS({
+            root,
+            source: path.resolve(root, source as string),
+            output: path.resolve(root, output as string, 'commonjs'),
+            options: targetOptions as CJSTargetOptions,
+            report,
+            watch,
+          })
+        );
         break;
       case 'module':
-        await buildModule({
-          root,
-          source: path.resolve(root, source as string),
-          output: path.resolve(root, output as string, 'module'),
-          options: targetOptions as ModuleTargetOptions,
-          report,
-          watch,
-        });
+        builds.push(() =>
+          buildModule({
+            root,
+            source: path.resolve(root, source as string),
+            output: path.resolve(root, output as string, 'module'),
+            options: targetOptions as ModuleTargetOptions,
+            report,
+            watch,
+          })
+        );
         break;
       case 'typescript':
-        await buildTypescript({
-          root,
-          source: path.resolve(root, source as string),
-          output: path.resolve(root, output as string, 'typescript'),
-          options: targetOptions as TSTargetOptions,
-          report,
-          watch,
-        });
+        builds.push(() =>
+          buildTypescript({
+            root,
+            source: path.resolve(root, source as string),
+            output: path.resolve(root, output as string, 'typescript'),
+            options: targetOptions as TSTargetOptions,
+            report,
+            watch,
+          })
+        );
         break;
       default:
         logger.exit(`Invalid target ${chalk.blue(targetName)}.`);
+    }
+  }
+
+  if (options.concurrent) {
+    const promises = builds.map((build) => build());
+    await (options.failFast
+      ? Promise.all(promises)
+      : Promise.allSettled(promises));
+  } else {
+    if (options.failFast) {
+      logger.warn('Concurrency is disabled. Ignoring failFast.');
+    }
+
+    for (const build of builds) {
+      await build();
     }
   }
 };
